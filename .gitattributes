@@ -1,2 +1,15 @@
-# Auto detect text files and perform LF normalization
-* text=auto
+*.pyc
+*.pyo
+
+.coverage
+coverage.xml
+
+.idea/
+.DS_Store
+/.Python
+
+*.lock
+.nuxt
+.env
+dumps/
+*.log

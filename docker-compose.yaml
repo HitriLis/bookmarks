@@ -1,0 +1,43 @@
+version: "3.7"
+
+
+services:
+  nginx:
+    command: nginx -g "daemon off;"
+    depends_on:
+      - backend
+    image: nginx:alpine
+    restart: on-failure
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - static:/var/static
+    ports:
+      - "80:80"
+
+  db:
+    image: postgres:15-alpine
+    command: postgres -c 'max_connections=200'
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - psql_data:/var/lib/postgresql/data
+    expose:
+      - 5432
+    restart: on-failure
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: bash -c 'while !</dev/tcp/db/5432; do sleep 1; done; python3 manage.py collectstatic --no-input; python3 manage.py migrate; python3 manage.py loaddata crm/fixtures/dev.json; uvicorn crm.asgi:application --port 8000 --host 0.0.0.0 --reload'
+    volumes:
+      - static:/var/static
+      - .:/var/app/
+    depends_on:
+      - db
+    restart: on-failure
+volumes:
+    psql_data: { }
+    static:
