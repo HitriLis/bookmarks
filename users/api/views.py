@@ -10,9 +10,22 @@ from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExampl
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
-from .serializers import RegistrationSerializer, TokenResponseSerializer
+from .serializers import (
+    RegistrationSerializer,
+    TokenResponseSerializer,
+    TokenRefreshResponseSerializer
+)
 
 
+class RefreshTokenView(TokenRefreshView):
+    @extend_schema(
+        tags=['Auth'],
+        responses={
+            status.HTTP_200_OK: TokenRefreshResponseSerializer,
+        }
+    )
+    def post(self, request, *args, **kwargs):
+        return super().post(request, *args, **kwargs)
 class LoginView(TokenObtainPairView):
     @extend_schema(
         tags=['Auth'],

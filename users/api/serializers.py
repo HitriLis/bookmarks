@@ -4,6 +4,10 @@ from django.contrib.auth import get_user_model
 User = get_user_model()
 
 
+class TokenRefreshResponseSerializer(serializers.Serializer):
+    access = serializers.CharField()
+
+
 class TokenResponseSerializer(serializers.Serializer):
     access = serializers.CharField()
     refresh = serializers.CharField()
