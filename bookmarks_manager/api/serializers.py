@@ -56,15 +56,5 @@ class BookmarksDetailSerializer(serializers.ModelSerializer):
         ]
 
 
-class BookmarksUpdateSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Bookmarks
-        fields = [
-            'id',
-            'page_title',
-            'link_page',
-            'type',
-            'type_name',
-            'short_description',
-            'picture'
-        ]
+class BookmarksCreateSerializer(serializers.Serializer):
+    url = serializers.URLField()

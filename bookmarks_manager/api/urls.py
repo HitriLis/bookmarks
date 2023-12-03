@@ -5,7 +5,8 @@ from .views import (
     CollectionBookmarksDetailView,
     CollectionAddBookmarksDetailView,
     BookmarksDetailView,
-    BookmarksListView
+    BookmarksListView,
+    BookmarksCreateView
 )
 
 urlpatterns = [
@@ -14,5 +15,6 @@ urlpatterns = [
     path('collection/<int:pk>/add-bookmark/', CollectionAddBookmarksDetailView.as_view(),
          name='collection-add-bookmark'),
     path('bookmark/', BookmarksListView.as_view(), name='bookmark'),
+    path('bookmark/create/', BookmarksCreateView.as_view(), name='bookmark-create'),
     path('bookmark/<int:pk>/', BookmarksDetailView.as_view(), name='bookmark-detail'),
 ]

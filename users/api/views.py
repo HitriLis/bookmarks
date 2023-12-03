@@ -22,16 +22,20 @@ class RefreshTokenView(TokenRefreshView):
         tags=['Auth'],
         responses={
             status.HTTP_200_OK: TokenRefreshResponseSerializer,
-        }
+        },
+        description="Refresh token"
     )
     def post(self, request, *args, **kwargs):
         return super().post(request, *args, **kwargs)
+
+
 class LoginView(TokenObtainPairView):
     @extend_schema(
         tags=['Auth'],
         responses={
             status.HTTP_200_OK: TokenResponseSerializer,
-        }
+        },
+        description="User login"
     )
     def post(self, request, *args, **kwargs):
         return super().post(request, *args, **kwargs)
@@ -48,7 +52,8 @@ class RegistrationView(generics.GenericAPIView):
         tags=['Auth'],
         responses={
             status.HTTP_201_CREATED: TokenResponseSerializer,
-        }
+        },
+        description="User registration"
     )
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)

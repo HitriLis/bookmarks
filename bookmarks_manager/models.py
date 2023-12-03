@@ -29,7 +29,7 @@ class Bookmarks(models.Model):
     )
     page_title = models.TextField(null=True, blank=True, verbose_name="Заголовок страницы")
     short_description = models.TextField(null=True, blank=True, verbose_name="Краткое описание")
-    picture = models.URLField(verbose_name="Картинка превью")
+    picture = models.URLField(null=True, blank=True, verbose_name="Картинка превью")
     created_at = models.DateTimeField(auto_now_add=True, null=True)
     updated_at = models.DateTimeField(auto_now=True, null=True)
 

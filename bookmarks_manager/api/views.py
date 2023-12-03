@@ -1,9 +1,12 @@
+import requests
+from bs4 import BeautifulSoup
+
 from django.utils.decorators import method_decorator
 from django.http import Http404
 
 from rest_framework import viewsets, generics, mixins, status
 from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample
@@ -11,10 +14,13 @@ from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExampl
 from .serializers import (
     CollectionBookmarksCreateSerializer,
     CollectionBookmarksDetailSerializer,
-    CollectionBookmarksSerializer, CollectionAddBookmarksSerializer, BookmarksDetailSerializer,
-    BookmarksUpdateSerializer, BookmarksListSerializer
+    CollectionBookmarksSerializer,
+    CollectionAddBookmarksSerializer,
+    BookmarksDetailSerializer,
+    BookmarksCreateSerializer,
+    BookmarksListSerializer
 )
-from ..models import CollectionBookmarks, Bookmarks
+from ..models import CollectionBookmarks, Bookmarks, LinkType
 
 
 class CollectionBookmarksView(
@@ -122,21 +128,16 @@ class CollectionAddBookmarksDetailView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class BookmarksDetailView(mixins.UpdateModelMixin,
-                          mixins.DestroyModelMixin,
+class BookmarksDetailView(mixins.DestroyModelMixin,
                           mixins.RetrieveModelMixin,
                           generics.GenericAPIView):
     permission_classes = (IsAuthenticated,)
+    serializer_class = BookmarksDetailSerializer
 
     def get_queryset(self):
         user = self.request.user
         queryset = Bookmarks.objects.filter(user=user).select_related('link_type').prefetch_related('collection').all()
         return queryset
-
-    def get_serializer_class(self):
-        if self.request.method == 'PUT':
-            return BookmarksUpdateSerializer
-        return BookmarksDetailSerializer
 
     @extend_schema(
         tags=['Bookmarks'],
@@ -144,13 +145,6 @@ class BookmarksDetailView(mixins.UpdateModelMixin,
     )
     def get(self, request, *args, **kwargs):
         return self.retrieve(self, request, *args, **kwargs)
-
-    @extend_schema(
-        tags=['Bookmarks'],
-        description="Bookmarks update"
-    )
-    def put(self, request, *args, **kwargs):
-        return self.update(request, *args, **kwargs)
 
     @extend_schema(
         tags=['Bookmarks'],
@@ -163,7 +157,7 @@ class BookmarksDetailView(mixins.UpdateModelMixin,
 @method_decorator(name="get", decorator=extend_schema(
     tags=['Bookmarks'],
     responses={
-        status.HTTP_200_OK: BookmarksUpdateSerializer,
+        status.HTTP_200_OK: BookmarksListSerializer,
     },
     description="Bookmarks list"
 ))
@@ -179,3 +173,54 @@ class BookmarksListView(generics.ListAPIView):
         user = self.request.user
         queryset = Bookmarks.objects.filter(user=user).select_related('link_type').prefetch_related('collection').all()
         return queryset
+
+
+class BookmarksCreateView(generics.GenericAPIView):
+    serializer_class = BookmarksCreateSerializer
+    permission_classes = (AllowAny,)
+
+    @extend_schema(
+        tags=['Bookmarks'],
+        responses={
+            status.HTTP_201_CREATED: BookmarksDetailSerializer,
+        },
+        description="Bookmarks create"
+    )
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        # user = serializer.save()
+        if serializer.is_valid(raise_exception=True):
+            serializer_data = serializer.validated_data
+            url = serializer_data['url']
+            try:
+                response = requests.get(url)
+                response.raise_for_status()
+                soup = BeautifulSoup(response.text, 'html.parser')
+                og_title = soup.find("meta", property="og:title").get('content')
+                og_description = soup.find("meta", property="og:description").get('content')
+                title = og_title if og_title else soup.title.string
+                meta_description = soup.find('meta', attrs={'name': 'description'}).get('content')
+                description = og_description if og_description else meta_description
+                og_type = soup.find("meta", property="og:type").get('content')
+                og_image = soup.find("meta", property="og:image").get('content')
+                type = og_type.split('.')[0]
+                # link_type = LinkType.objects.
+
+                # Bookmarks.objects.create(
+                #     user=user,
+                #     link_page=url,
+                #     link_type=link_type,
+                #     page_title=title,
+                #     short_description=description,
+                #     picture=og_image
+                # )
+                return Response({
+                    'title': title,
+                    'description': description,
+                    'meta_description': meta_description,
+                    'type': type,
+                    'og_image': og_image
+                }, status=status.HTTP_200_OK)
+            except Exception as e:
+                return Response({}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
