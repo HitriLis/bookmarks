@@ -11,5 +11,40 @@
       "groups": [],
       "user_permissions": []
     }
+  },
+  {
+    "model": "bookmarks_manager.linktype",
+    "pk": "website",
+    "fields": {
+      "name": "Website"
+    }
+  },
+  {
+    "model": "bookmarks_manager.linktype",
+    "pk": "book",
+    "fields": {
+      "name": "Book"
+    }
+  },
+  {
+    "model": "bookmarks_manager.linktype",
+    "pk": "article",
+    "fields": {
+      "name": "Article"
+    }
+  },
+  {
+    "model": "bookmarks_manager.linktype",
+    "pk": "music",
+    "fields": {
+      "name": "Music"
+    }
+  },
+  {
+    "model": "bookmarks_manager.linktype",
+    "pk": "video",
+    "fields": {
+      "name": "Video"
+    }
   }
 ]

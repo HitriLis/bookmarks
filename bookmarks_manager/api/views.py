@@ -6,7 +6,7 @@ from django.http import Http404
 
 from rest_framework import viewsets, generics, mixins, status
 from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample
@@ -20,7 +20,7 @@ from .serializers import (
     BookmarksCreateSerializer,
     BookmarksListSerializer
 )
-from ..models import CollectionBookmarks, Bookmarks, LinkType
+from ..models import CollectionBookmarks, Bookmarks
 
 
 class CollectionBookmarksView(
@@ -177,7 +177,7 @@ class BookmarksListView(generics.ListAPIView):
 
 class BookmarksCreateView(generics.GenericAPIView):
     serializer_class = BookmarksCreateSerializer
-    permission_classes = (AllowAny,)
+    permission_classes = (IsAuthenticated,)
 
     @extend_schema(
         tags=['Bookmarks'],
@@ -188,7 +188,7 @@ class BookmarksCreateView(generics.GenericAPIView):
     )
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
-        # user = serializer.save()
+        user = request.user
         if serializer.is_valid(raise_exception=True):
             serializer_data = serializer.validated_data
             url = serializer_data['url']
@@ -196,31 +196,25 @@ class BookmarksCreateView(generics.GenericAPIView):
                 response = requests.get(url)
                 response.raise_for_status()
                 soup = BeautifulSoup(response.text, 'html.parser')
-                og_title = soup.find("meta", property="og:title").get('content')
-                og_description = soup.find("meta", property="og:description").get('content')
-                title = og_title if og_title else soup.title.string
-                meta_description = soup.find('meta', attrs={'name': 'description'}).get('content')
-                description = og_description if og_description else meta_description
-                og_type = soup.find("meta", property="og:type").get('content')
-                og_image = soup.find("meta", property="og:image").get('content')
-                type = og_type.split('.')[0]
-                # link_type = LinkType.objects.
+                og_title = soup.find("meta", property="og:title").get('content') if soup.find("meta", property="og:title") else None
+                og_description = soup.find("meta", property="og:description").get('content') if soup.find("meta", property="og:description") else None
+                meta_description = soup.find('meta', attrs={'name': 'description'}).get('content') if soup.find('meta', attrs={'name': 'description'}) else None
+                og_type = soup.find("meta", property="og:type").get('content', 'website') if soup.find("meta", property="og:type") else 'website'
+                og_image = soup.find("meta", property="og:image").get('content') if soup.find("meta", property="og:image") else None
 
-                # Bookmarks.objects.create(
-                #     user=user,
-                #     link_page=url,
-                #     link_type=link_type,
-                #     page_title=title,
-                #     short_description=description,
-                #     picture=og_image
-                # )
-                return Response({
-                    'title': title,
-                    'description': description,
-                    'meta_description': meta_description,
-                    'type': type,
-                    'og_image': og_image
-                }, status=status.HTTP_200_OK)
+                description = og_description if og_description else meta_description
+                title = og_title if og_title else soup.title.string
+                bookmarks_type = og_type.split('.')[0]
+                bookmarks = Bookmarks.objects.create(
+                    user=user,
+                    link_page=url,
+                    link_type_id=bookmarks_type,
+                    page_title=title,
+                    short_description=description,
+                    picture=og_image
+                )
+                return Response(BookmarksDetailSerializer(bookmarks).data, status=status.HTTP_200_OK)
             except Exception as e:
-                return Response({}, status=status.HTTP_400_BAD_REQUEST)
+                print(e)
+                return Response({'error': 'Ошибка получения данных ресурса'}, status=status.HTTP_400_BAD_REQUEST)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

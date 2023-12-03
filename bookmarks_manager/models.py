@@ -4,7 +4,7 @@ from users.models import User
 
 class LinkType(models.Model):
     name = models.CharField(max_length=250, verbose_name="Название")
-    type = models.CharField(max_length=150, verbose_name="Тип")
+    type_key = models.CharField(max_length=150, primary_key=True, verbose_name="Тип")
 
     def __str__(self):
         return self.name or f'LinkType Id:{self.id}'
@@ -39,7 +39,7 @@ class Bookmarks(models.Model):
     @property
     def type(self):
         if self.link_type:
-            return self.link_type.type
+            return self.link_type.type_key
         return None
 
     @property
